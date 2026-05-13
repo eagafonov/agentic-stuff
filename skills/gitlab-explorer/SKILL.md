@@ -92,6 +92,15 @@ gl.py project group/project-name mr 258 resolve 12345
 gl.py project group/project-name mr 258 resolve --all
 ```
 
+### Resolve MR discussions
+```bash
+# Resolve the discussion containing note #12345
+gl.py project scenario-studio/charts mr 258 resolve 12345
+
+# Resolve all unresolved discussions at once
+gl.py project scenario-studio/charts mr 258 resolve --all
+```
+
 ### Update an MR
 ```bash
 gl.py project group/project-name mr 258 update --title "New title"
