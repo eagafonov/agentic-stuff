@@ -27,6 +27,8 @@ Run all commands as `python3 <skill-dir>/scripts/gl.py <command>`.
 | `gl.py project <path> mr <iid> approvals` | MR approval status |
 | `gl.py project <path> mr <iid> notes [--all]` | MR comments (excludes system notes by default) |
 | `gl.py project <path> mr <iid> comment <body> [--file PATH --line N]` | Post MR comment (general or diff note) |
+| `gl.py project <path> mr <iid> resolve <note_id>` | Resolve discussion containing the given note ID |
+| `gl.py project <path> mr <iid> resolve --all` | Resolve all unresolved discussions |
 | `gl.py project <path> mr <iid> update [--title TITLE] [--description DESC]` | Update MR title/description |
 | `gl.py project <path> commits [--author X] [--since DATE] [--until DATE]` | List commits |
 | `gl.py project <path> branches [--search PATTERN]` | List branches |
@@ -77,6 +79,15 @@ gl.py project group/project-name mr 258 comment "This could be simplified" --fil
 
 # Multiline comment from stdin
 echo "## Review Summary\n\nLooks good overall." | gl.py project group/project-name mr 258 comment -
+```
+
+### Resolve MR discussions
+```bash
+# Resolve the discussion containing note #12345
+gl.py project group/project-name mr 258 resolve 12345
+
+# Resolve all unresolved discussions at once
+gl.py project group/project-name mr 258 resolve --all
 ```
 
 ### Update an MR

@@ -16,6 +16,8 @@ Usage:
   gl.py project <path> mr <mr_iid> approvals     # MR approvals
   gl.py project <path> mr <mr_iid> notes [--all] # MR comments (excludes system notes by default)
   gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N]  # Post MR comment
+  gl.py project <path> mr <mr_iid> resolve <note_id>                          # Resolve discussion by note ID
+  gl.py project <path> mr <mr_iid> resolve --all                              # Resolve all unresolved discussions
   gl.py project <path> mr <mr_iid> update [--title TITLE] [--description DESC]  # Update MR
   gl.py project <path> commits [--author AUTHOR] [--since DATE] [--until DATE] [--ref REF] [--limit N]
   gl.py project <path> branches [--search PATTERN]
@@ -190,6 +192,50 @@ def cmd_project_mr_notes(args):
         print(header)
         print(n.body)
         print()
+
+
+def cmd_project_mr_resolve(args):
+    """Resolve MR discussion(s) by note ID or all at once."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+
+    note_id = args.body
+    resolve_all = args.all
+
+    if not note_id and not resolve_all:
+        print("Error: provide a note_id or --all to resolve all unresolved threads", file=sys.stderr)
+        sys.exit(1)
+
+    discussions = mr.discussions.list(get_all=True)
+    resolved_count = 0
+
+    for d in discussions:
+        notes = d.attributes.get("notes", [])
+        # Skip non-resolvable discussions (system notes, general comments)
+        if not any(n.get("resolvable") for n in notes):
+            continue
+
+        if resolve_all:
+            if any(not n.get("resolved", True) for n in notes if n.get("resolvable")):
+                d.resolved = True
+                d.save()
+                resolved_count += 1
+                print(f"Resolved discussion {d.id}")
+        else:
+            if any(str(n["id"]) == str(note_id) for n in notes):
+                d.resolved = True
+                d.save()
+                resolved_count += 1
+                print(f"Resolved discussion {d.id} (containing note #{note_id})")
+                break
+
+    if resolved_count == 0:
+        if resolve_all:
+            print("No unresolved discussions found")
+        else:
+            print(f"Note #{note_id} not found in any resolvable discussion", file=sys.stderr)
+            sys.exit(1)
 
 
 def cmd_project_mr_update(args):
@@ -377,7 +423,7 @@ def main():
 
     mr_p = proj_sub.add_parser("mr")
     mr_p.add_argument("mr_iid", type=int)
-    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "notes", "comment", "update"], default=None)
+    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "notes", "comment", "resolve", "update"], default=None)
     mr_p.add_argument("--all", action="store_true", help="Include system notes (for 'notes' subcommand)")
     mr_p.add_argument("body", nargs="?", default=None, help="Comment body (for 'comment' subcommand, use '-' for stdin)")
     mr_p.add_argument("--file", default=None, help="File path for diff note")
@@ -457,6 +503,8 @@ def main():
                         print("Error: comment body is required (pass text or '-' for stdin)", file=sys.stderr)
                         sys.exit(1)
                     cmd_project_mr_comment(args)
+                elif args.mr_subcmd == "resolve":
+                    cmd_project_mr_resolve(args)
                 elif args.mr_subcmd == "update":
                     cmd_project_mr_update(args)
                 else:
