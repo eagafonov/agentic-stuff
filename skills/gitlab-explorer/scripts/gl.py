@@ -18,6 +18,8 @@ Usage:
   gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N]  # Post MR comment
   gl.py project <path> mr <mr_iid> resolve <note_id>                          # Resolve discussion by note ID
   gl.py project <path> mr <mr_iid> resolve --all                              # Resolve all unresolved discussions
+  gl.py project <path> mr <mr_iid> approve                                      # Approve MR
+  gl.py project <path> mr <mr_iid> unapprove                                    # Unapprove MR
   gl.py project <path> mr <mr_iid> update [--title TITLE] [--description DESC]  # Update MR
   gl.py project <path> commits [--author AUTHOR] [--since DATE] [--until DATE] [--ref REF] [--limit N]
   gl.py project <path> branches [--search PATTERN]
@@ -260,6 +262,24 @@ def cmd_project_mr_update(args):
         print(f"  description: {desc_preview}")
 
 
+def cmd_project_mr_approve(args):
+    """Approve a merge request."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+    mr.approve()
+    print(f"Approved MR !{mr.iid}")
+
+
+def cmd_project_mr_unapprove(args):
+    """Unapprove a merge request."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+    mr.unapprove()
+    print(f"Unapproved MR !{mr.iid}")
+
+
 def cmd_project_mr_comment(args):
     """Post a comment on an MR. Supports general comments and diff notes."""
     gl = get_client()
@@ -423,7 +443,7 @@ def main():
 
     mr_p = proj_sub.add_parser("mr")
     mr_p.add_argument("mr_iid", type=int)
-    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "notes", "comment", "resolve", "update"], default=None)
+    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "resolve", "update"], default=None)
     mr_p.add_argument("--all", action="store_true", help="Include system notes (for 'notes' subcommand)")
     mr_p.add_argument("body", nargs="?", default=None, help="Comment body (for 'comment' subcommand, use '-' for stdin)")
     mr_p.add_argument("--file", default=None, help="File path for diff note")
@@ -496,6 +516,10 @@ def main():
                     cmd_project_mr_changes(args)
                 elif args.mr_subcmd == "approvals":
                     cmd_project_mr_approvals(args)
+                elif args.mr_subcmd == "approve":
+                    cmd_project_mr_approve(args)
+                elif args.mr_subcmd == "unapprove":
+                    cmd_project_mr_unapprove(args)
                 elif args.mr_subcmd == "notes":
                     cmd_project_mr_notes(args)
                 elif args.mr_subcmd == "comment":
