@@ -380,18 +380,26 @@ def cmd_events(args):
     if args.before:
         kwargs["before"] = args.before
     events = gl.events.list(**kwargs)
+    project_cache = {}
     for e in events:
         action = e.action_name
         target = getattr(e, "target_title", "") or ""
         target_type = getattr(e, "target_type", "") or ""
         project_id = getattr(e, "project_id", "") or ""
+        if project_id and project_id not in project_cache:
+            try:
+                p = gl.projects.get(project_id)
+                project_cache[project_id] = p.path_with_namespace
+            except Exception:
+                project_cache[project_id] = str(project_id)
+        project_name = project_cache.get(project_id, str(project_id))
         push_data = getattr(e, "push_data", None)
         if push_data:
             ref = push_data.get("ref", "")
             commit_title = push_data.get("commit_title", "")
-            print(f"{fmt_date(e.created_at)}  {action:<20} proj:{project_id}  {ref}  {commit_title}")
+            print(f"{fmt_date(e.created_at)}  {action:<20} {project_name}  {ref}  {commit_title}")
         else:
-            print(f"{fmt_date(e.created_at)}  {action:<20} proj:{project_id}  {target_type}: {target}")
+            print(f"{fmt_date(e.created_at)}  {action:<20} {project_name}  {target_type}: {target}")
 
 
 def cmd_groups_search(args):
