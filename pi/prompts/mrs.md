@@ -20,7 +20,14 @@ Argument `$1` controls what to check (default: `all`):
 
 ## Repositories to Check
 
-Discover the list of repositories (short names and project IDs/paths) from `AGENTS.md` in the current working directory and any files it references. Parse the project list from there before proceeding.
+Discover the list of repositories (as `group/project` paths) using these sources (in priority order):
+
+1. **`gitlab-projects.md`** — look for this file in the current working directory
+2. **`git remote -v`** — if no project list file is found, extract the GitLab project path from the remote URL:
+   - SSH: `origin	git@gitlab.example.com:group/project.git` → `group/project`
+   - HTTPS: `origin	https://gitlab.example.com/group/project.git` → `group/project`
+
+Parse the project list before proceeding. If only one project is found (from git remote), use that single project.
 
 ## Procedure
 
@@ -28,12 +35,12 @@ Discover the list of repositories (short names and project IDs/paths) from `AGEN
 
 For each repo above, run:
 ```bash
-python3 <skill-dir>/scripts/gl.py project <ID> mrs --author $GITLAB_USERNAME --state opened --limit 10
+python3 <skill-dir>/scripts/gl.py project <group/project> mrs --author $GITLAB_USERNAME --state opened --limit 10
 ```
 
 For each MR found, get approval status:
 ```bash
-python3 <skill-dir>/scripts/gl.py project <ID> mr <iid> approvals
+python3 <skill-dir>/scripts/gl.py project <group/project> mr <iid> approvals
 ```
 
 Present as table titled "My Open MRs":
@@ -50,8 +57,8 @@ Present as table titled "My Open MRs":
 
 For each repo above, run TWO queries and merge results (dedup by MR iid):
 ```bash
-python3 <skill-dir>/scripts/gl.py project <ID> mrs --assignee $GITLAB_USERNAME --state opened --limit 10
-python3 <skill-dir>/scripts/gl.py project <ID> mrs --reviewer $GITLAB_USERNAME --state opened --limit 10
+python3 <skill-dir>/scripts/gl.py project <group/project> mrs --assignee $GITLAB_USERNAME --state opened --limit 10
+python3 <skill-dir>/scripts/gl.py project <group/project> mrs --reviewer $GITLAB_USERNAME --state opened --limit 10
 ```
 
 Filter results to include only MRs where author is NOT `$GITLAB_USERNAME`.
