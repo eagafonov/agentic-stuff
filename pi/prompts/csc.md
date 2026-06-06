@@ -8,3 +8,4 @@ If parameters are provided, treat them as hints for the commit message (e.g. 'cs
 When reviewing staged changes:
 - Skip obvious/mechanical changes (renumbering sections, whitespace, formatting adjustments) that are a natural consequence of the primary change
 - Focus the commit message on the substantive/intentional changes only
+- If project has AGENTS.md with commit guidelines, follow them (scope, prefix conventions, etc.)
