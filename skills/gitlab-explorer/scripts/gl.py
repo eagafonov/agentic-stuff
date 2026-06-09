@@ -117,7 +117,9 @@ def cmd_project_mrs(args):
         kwargs["scope"] = args.scope
     mrs = p.mergerequests.list(**kwargs)
     for mr in mrs:
-        print(f"!{mr.iid:<6} {mr.state:<8} {mr.author['username']:<16} {mr.title}")
+        labels = ",".join(mr.labels) if mr.labels else ""
+        labels_suffix = f"  [{labels}]" if labels else ""
+        print(f"!{mr.iid:<6} {mr.state:<8} {mr.author['username']:<16} {mr.title}{labels_suffix}")
 
 
 def cmd_project_mr_detail(args):
