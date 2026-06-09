@@ -9,7 +9,7 @@ Check open MRs across multiple repositories using the `gitlab-explorer` skill an
 
 **Skill:** Load `gitlab-explorer` skill and use its `gl.py` script (resolve the script path from the skill directory: `<skill-dir>/scripts/gl.py`).
 
-**GitLab username:** Use the value of the `GITLAB_USERNAME` environment variable (resolve it at runtime via `$GITLAB_USERNAME`).
+**GitLab username:** Use `$GITLAB_USERNAME` directly in shell commands — do NOT resolve, echo, or inspect its value; let the shell expand it at runtime.
 
 ## Scope
 
