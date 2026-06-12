@@ -38,20 +38,22 @@ For each repo above, run:
 python3 <skill-dir>/scripts/gl.py project <group/project> mrs --author $GITLAB_USERNAME --state opened --limit 10
 ```
 
-For each MR found, get approval status:
+For each MR found, get approval status and thread count:
 ```bash
 python3 <skill-dir>/scripts/gl.py project <group/project> mr <iid> approvals
+python3 <skill-dir>/scripts/gl.py project <group/project> mr <iid> threads
 ```
 
 Present as table titled "My Open MRs":
 
-| MR | Repo | Title | Draft | Approved by | Approvals needed |
-|----|------|-------|-------|-------------|-----------------|
+| MR | Repo | Title | Draft | Approved by | Approvals needed | Threads |
+|----|------|-------|-------|-------------|------------------|---------|
 
 - MR column: `!IID`
 - Draft: yes/no (check if title starts with "Draft:")
 - Approved by: list of usernames from approvals, or "none"
 - Approvals needed: `approvals_left` from approvals response
+- Threads: `unresolved/total` from threads response (e.g. `3/7`); show `-` if total is 0
 
 ### Table 2: MRs Where I'm Assignee or Reviewer (authored by others)
 
@@ -63,18 +65,24 @@ python3 <skill-dir>/scripts/gl.py project <group/project> mrs --reviewer $GITLAB
 
 Filter results to include only MRs where author is NOT `$GITLAB_USERNAME`.
 
+For each MR found, get thread count:
+```bash
+python3 <skill-dir>/scripts/gl.py project <group/project> mr <iid> threads
+```
+
 Present as table titled "MRs Where I'm Assignee or Reviewer":
 
-| MR | Repo | Title | Author | My role |
-|----|------|-------|--------|---------|
+| MR | Repo | Title | Author | My role | Threads |
+|----|------|-------|--------|---------|---------|
 
 - MR column: `!IID`
 - My role: assignee, reviewer, or both (based on which query returned it)
+- Threads: `unresolved/total` from threads response (e.g. `3/7`); show `-` if total is 0
 
 ## Batching
 
 - Run queries for all repos in parallel (batch bash calls)
-- Process approval checks only for my MRs (Table 1)
+- Process approval and thread checks for relevant MRs
 - If a repo has no open MRs, skip it silently
 
 ## Output Format

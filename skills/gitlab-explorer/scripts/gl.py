@@ -14,6 +14,7 @@ Usage:
   gl.py project <path> mr <mr_iid>               # MR details
   gl.py project <path> mr <mr_iid> changes       # MR diff summary
   gl.py project <path> mr <mr_iid> approvals     # MR approvals
+  gl.py project <path> mr <mr_iid> threads       # MR unresolved/total thread count
   gl.py project <path> mr <mr_iid> notes [--all] # MR comments (excludes system notes by default)
   gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N]  # Post MR comment
   gl.py project <path> mr <mr_iid> resolve <note_id>                          # Resolve discussion by note ID
@@ -264,6 +265,23 @@ def cmd_project_mr_update(args):
         print(f"  description: {desc_preview}")
 
 
+def cmd_project_mr_threads(args):
+    """Count unresolved and total resolvable threads on an MR."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+    discussions = mr.discussions.list(get_all=True)
+    total = 0
+    unresolved = 0
+    for d in discussions:
+        notes = d.attributes.get("notes", [])
+        if any(n.get("resolvable") for n in notes):
+            total += 1
+            if any(n.get("resolvable") and not n.get("resolved") for n in notes):
+                unresolved += 1
+    jprint({"unresolved": unresolved, "total": total})
+
+
 def cmd_project_mr_approve(args):
     """Approve a merge request."""
     gl = get_client()
@@ -453,7 +471,7 @@ def main():
 
     mr_p = proj_sub.add_parser("mr")
     mr_p.add_argument("mr_iid", type=int)
-    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "resolve", "update"], default=None)
+    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "resolve", "update", "threads"], default=None)
     mr_p.add_argument("--all", action="store_true", help="Include system notes (for 'notes' subcommand)")
     mr_p.add_argument("body", nargs="?", default=None, help="Comment body (for 'comment' subcommand, use '-' for stdin)")
     mr_p.add_argument("--file", default=None, help="File path for diff note")
@@ -541,6 +559,8 @@ def main():
                     cmd_project_mr_resolve(args)
                 elif args.mr_subcmd == "update":
                     cmd_project_mr_update(args)
+                elif args.mr_subcmd == "threads":
+                    cmd_project_mr_threads(args)
                 else:
                     cmd_project_mr_detail(args)
             elif args.project_cmd == "commits":

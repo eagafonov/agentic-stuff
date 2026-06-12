@@ -25,6 +25,7 @@ Run all commands as `python3 <skill-dir>/scripts/gl.py <command>`.
 | `gl.py project <path> mr <iid>` | MR details (JSON) |
 | `gl.py project <path> mr <iid> changes` | MR file diff summary |
 | `gl.py project <path> mr <iid> approvals` | MR approval status |
+| `gl.py project <path> mr <iid> threads` | MR unresolved/total thread count (JSON) |
 | `gl.py project <path> mr <iid> approve` | Approve MR |
 | `gl.py project <path> mr <iid> unapprove` | Unapprove MR |
 | `gl.py project <path> mr <iid> notes [--all]` | MR comments (excludes system notes by default) |
