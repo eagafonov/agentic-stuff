@@ -46,14 +46,15 @@ python3 <skill-dir>/scripts/gl.py project <group/project> mr <iid> threads
 
 Present as table titled "My Open MRs":
 
-| MR | Repo | Title | Draft | Approved by | Approvals needed | Threads |
-|----|------|-------|-------|-------------|------------------|---------|
+| MR | Repo | Title | Draft | Approved by | Approvals needed | Threads | Unresolved |
+|----|------|-------|-------|-------------|------------------|---------|------------|
 
 - MR column: `!IID`
 - Draft: yes/no (check if title starts with "Draft:")
 - Approved by: list of usernames from approvals, or "none"
 - Approvals needed: `approvals_left` from approvals response
-- Threads: `unresolved/total` from threads response (e.g. `3/7`); show `-` if total is 0
+- Threads: total resolvable thread count from threads response; show `-` if 0
+- Unresolved: unresolved thread count from threads response; show `-` if 0
 
 ### Table 2: MRs Where I'm Assignee or Reviewer (authored by others)
 
@@ -72,12 +73,13 @@ python3 <skill-dir>/scripts/gl.py project <group/project> mr <iid> threads
 
 Present as table titled "MRs Where I'm Assignee or Reviewer":
 
-| MR | Repo | Title | Author | My role | Threads |
-|----|------|-------|--------|---------|---------|
+| MR | Repo | Title | Author | My role | Threads | Unresolved |
+|----|------|-------|--------|---------|---------|------------|
 
 - MR column: `!IID`
 - My role: assignee, reviewer, or both (based on which query returned it)
-- Threads: `unresolved/total` from threads response (e.g. `3/7`); show `-` if total is 0
+- Threads: total resolvable thread count from threads response; show `-` if 0
+- Unresolved: unresolved thread count from threads response; show `-` if 0
 
 ## Batching
 
