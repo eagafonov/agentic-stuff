@@ -29,7 +29,8 @@ Run all commands as `python3 <skill-dir>/scripts/gl.py <command>`.
 | `gl.py project <path> mr <iid> approve` | Approve MR |
 | `gl.py project <path> mr <iid> unapprove` | Unapprove MR |
 | `gl.py project <path> mr <iid> notes [--all]` | MR comments (excludes system notes by default) |
-| `gl.py project <path> mr <iid> comment <body> [--file PATH --line N]` | Post MR comment (general or diff note) |
+| `gl.py project <path> mr <iid> comment <body> [--file PATH --line N] [--reaction EMOJI]` | Post MR comment (general or diff note) |
+| `gl.py project <path> mr <iid> react <note_id> --reaction EMOJI` | Add reaction (award emoji) to a note |
 | `gl.py project <path> mr <iid> resolve <note_id>` | Resolve discussion containing the given note ID |
 | `gl.py project <path> mr <iid> resolve --all` | Resolve all unresolved discussions |
 | `gl.py project <path> mr <iid> update [--title TITLE] [--description DESC]` | Update MR title/description |
@@ -75,14 +76,16 @@ gl.py project group/project-name mr 258 notes
 ### Post a comment on an MR
 ```bash
 # General comment
-gl.py project group/project-name mr 258 comment "LGTM, minor nit on line 42"
+gl.py project group/project-name mr 258 comment "LGTM, minor nit on line 42" --reaction robot
 
 # Diff note on a specific file and line
-gl.py project group/project-name mr 258 comment "This could be simplified" --file src/main.go --line 55
+gl.py project group/project-name mr 258 comment "This could be simplified" --file src/main.go --line 55 --reaction robot
 
 # Multiline comment from stdin
-echo "## Review Summary\n\nLooks good overall." | gl.py project group/project-name mr 258 comment -
+echo "## Review Summary\n\nLooks good overall." | gl.py project group/project-name mr 258 comment - --reaction robot
 ```
+
+> **Convention:** Always add `--reaction robot` when posting comments as an agent. This marks the comment as machine-generated so humans can easily distinguish agent comments from human ones.
 
 ### Resolve MR discussions
 ```bash

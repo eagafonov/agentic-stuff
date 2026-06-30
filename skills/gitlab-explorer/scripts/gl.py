@@ -16,7 +16,8 @@ Usage:
   gl.py project <path> mr <mr_iid> approvals     # MR approvals
   gl.py project <path> mr <mr_iid> threads       # MR unresolved/total thread count
   gl.py project <path> mr <mr_iid> notes [--all] # MR comments (excludes system notes by default)
-  gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N]  # Post MR comment
+  gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N] [--reaction EMOJI]  # Post MR comment
+  gl.py project <path> mr <mr_iid> react <note_id> --reaction EMOJI            # Add reaction to a note
   gl.py project <path> mr <mr_iid> resolve <note_id>                          # Resolve discussion by note ID
   gl.py project <path> mr <mr_iid> resolve --all                              # Resolve all unresolved discussions
   gl.py project <path> mr <mr_iid> approve                                      # Approve MR
@@ -334,7 +335,43 @@ def cmd_project_mr_comment(args):
     else:
         # Post a general MR comment
         note = mr.notes.create({"body": body})
-        print(f"Created note #{note.id}")
+        note_id = note.id
+        print(f"Created note #{note_id}")
+
+    # Add reaction if requested
+    if args.reaction:
+        _add_note_reaction(p, mr, note_id, args.reaction)
+
+
+def cmd_project_mr_react(args):
+    """Add a reaction (award emoji) to an MR note."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+    # 'body' positional is reused to capture note_id for 'react' subcommand
+    try:
+        note_id = int(args.body)
+    except (ValueError, TypeError):
+        print("Error: note_id must be a numeric ID", file=sys.stderr)
+        sys.exit(1)
+    emoji = args.reaction
+    if not emoji:
+        print("Error: --reaction EMOJI is required for 'react' subcommand", file=sys.stderr)
+        sys.exit(1)
+    _add_note_reaction(p, mr, note_id, emoji)
+
+
+def _add_note_reaction(p, mr, note_id, emoji):
+    """Add an award emoji to a merge request note via the API."""
+    note = mr.notes.get(note_id)
+    try:
+        note.awardemojis.create({"name": emoji})
+        print(f"Added :{emoji}: reaction to note #{note_id}")
+    except gitlab.exceptions.GitlabCreateError as e:
+        if "has already been taken" in str(e):
+            print(f"Reaction :{emoji}: already exists on note #{note_id}")
+        else:
+            raise
 
 
 def cmd_project_commits(args):
@@ -471,11 +508,12 @@ def main():
 
     mr_p = proj_sub.add_parser("mr")
     mr_p.add_argument("mr_iid", type=int)
-    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "resolve", "update", "threads"], default=None)
+    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "react", "resolve", "update", "threads"], default=None)
     mr_p.add_argument("--all", action="store_true", help="Include system notes (for 'notes' subcommand)")
     mr_p.add_argument("body", nargs="?", default=None, help="Comment body (for 'comment' subcommand, use '-' for stdin)")
     mr_p.add_argument("--file", default=None, help="File path for diff note")
     mr_p.add_argument("--line", type=int, default=None, help="Line number for diff note")
+    mr_p.add_argument("--reaction", default=None, help="Emoji name to add as reaction (for 'comment' and 'react' subcommands)")
     mr_p.add_argument("--title", default=None, help="New MR title (for 'update' subcommand)")
     mr_p.add_argument("--description", default=None, help="New MR description (for 'update' subcommand)")
 
@@ -555,6 +593,11 @@ def main():
                         print("Error: comment body is required (pass text or '-' for stdin)", file=sys.stderr)
                         sys.exit(1)
                     cmd_project_mr_comment(args)
+                elif args.mr_subcmd == "react":
+                    if not args.body:
+                        print("Error: note_id is required for 'react' subcommand", file=sys.stderr)
+                        sys.exit(1)
+                    cmd_project_mr_react(args)
                 elif args.mr_subcmd == "resolve":
                     cmd_project_mr_resolve(args)
                 elif args.mr_subcmd == "update":
