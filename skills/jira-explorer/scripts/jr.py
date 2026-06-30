@@ -12,6 +12,7 @@ Usage:
   jr.py auth                                      # Verify authentication
   jr.py myself [--limit N]                        # Current user + assigned issues
   jr.py search <JQL> [--limit N]                  # Run JQL query
+  jr.py create <PROJECT> --type <type> --summary <summary> [options]  # Create issue
   jr.py issue <KEY>                               # Issue details (JSON)
   jr.py issue <KEY> comments                      # List comments
   jr.py issue <KEY> comment <body>                # Post comment (use '-' for stdin)
@@ -107,6 +108,45 @@ def cmd_search(args):
         assignee = str(issue.fields.assignee) if issue.fields.assignee else ""
         summary = issue.fields.summary
         print(f"{key:<12} {status:<16} {assignee:<20} {summary}")
+
+
+def cmd_create(args):
+    """Create a new issue."""
+    client = get_client()
+    fields = {
+        "project": {"key": args.project},
+        "issuetype": {"name": args.type},
+        "summary": args.summary,
+    }
+    if args.description:
+        if args.description == "-":
+            fields["description"] = sys.stdin.read()
+        else:
+            fields["description"] = args.description
+    if args.priority:
+        fields["priority"] = {"name": args.priority}
+    if args.assignee:
+        fields["assignee"] = {"name": args.assignee}
+    if args.labels:
+        fields["labels"] = args.labels
+    if args.parent:
+        fields["parent"] = {"key": args.parent}
+    if args.json_fields:
+        try:
+            json_data = json.loads(args.json_fields)
+            fields.update(json_data)
+        except json.JSONDecodeError as e:
+            print(f"Error: invalid JSON: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    issue = client.create_issue(fields=fields)
+    jprint({
+        "key": issue.key,
+        "summary": issue.fields.summary,
+        "status": str(issue.fields.status),
+        "issueType": str(issue.fields.issuetype),
+        "url": f"{_resolve_url()}/browse/{issue.key}",
+    })
 
 
 def cmd_issue_detail(args):
@@ -232,6 +272,24 @@ def cmd_issue_update(args):
 # -- Argument Parsing --
 
 
+def parse_create_args(argv):
+    """Parse create subcommand arguments."""
+    parser = argparse.ArgumentParser(prog="jr.py create", description="Create a Jira issue")
+    parser.add_argument("project", help="Project key (e.g. DRIVE)")
+    parser.add_argument("--type", required=True, help="Issue type (Bug, Task, Story, Sub-task, Epic)")
+    parser.add_argument("--summary", required=True, help="Issue summary/title")
+    parser.add_argument("--description", help="Issue description (use '-' for stdin)")
+    parser.add_argument("--priority", help="Priority name (e.g. 'P0 - Must have', 'P1 - Should have')")
+    parser.add_argument("--assignee", help="Assignee username")
+    parser.add_argument("--labels", nargs="+", help="Labels to apply")
+    parser.add_argument("--parent", help="Parent issue key (for sub-tasks or linking to epic)")
+    parser.add_argument("--json", dest="json_fields", help="Additional fields as JSON object")
+
+    args = parser.parse_args(argv)
+    args.command = "create"
+    return args
+
+
 def parse_issue_args(argv):
     """Parse issue subcommand arguments.
 
@@ -277,6 +335,8 @@ def main():
     # Handle 'issue' command with manual parsing for flexibility
     if len(sys.argv) > 1 and sys.argv[1] == "issue":
         args = parse_issue_args(sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "create":
+        args = parse_create_args(sys.argv[2:])
     else:
         parser = argparse.ArgumentParser(
             description="Jira Explorer CLI",
@@ -297,6 +357,9 @@ def main():
         search_p.add_argument("jql", help="JQL query string")
         search_p.add_argument("--limit", type=int, default=20)
 
+        # create (placeholder for help text)
+        sub.add_parser("create", help="Create issue (use: jr.py create <PROJECT> --type <type> --summary <summary>)")
+
         # issue (placeholder for help text)
         sub.add_parser("issue", help="Issue operations (use: jr.py issue <KEY> [subcmd])")
 
@@ -313,6 +376,8 @@ def main():
             cmd_myself(args)
         elif args.command == "search":
             cmd_search(args)
+        elif args.command == "create":
+            cmd_create(args)
         elif args.command == "issue":
             if args.subcmd is None:
                 cmd_issue_detail(args)

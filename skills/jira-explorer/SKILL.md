@@ -21,6 +21,7 @@ Run all commands as `python3 <skill-dir>/scripts/jr.py <command>`.
 | `jr.py auth` | Verify authentication |
 | `jr.py myself [--limit N]` | Current user info + assigned issues |
 | `jr.py search <JQL> [--limit N]` | Run JQL query |
+| `jr.py create <PROJECT> --type <type> --summary <summary> [opts]` | Create a new issue |
 | `jr.py issue <KEY>` | Issue details (JSON) |
 | `jr.py issue <KEY> comments` | List issue comments |
 | `jr.py issue <KEY> comment <body>` | Post a comment (use `-` for stdin) |
@@ -53,6 +54,25 @@ jr.py issue PROJ-123 comment "Working on this now"
 
 # Multiline comment from stdin
 echo "## Summary\n\nDone." | jr.py issue PROJ-123 comment -
+```
+
+### Create an issue
+```bash
+# Simple bug
+jr.py create PROJ --type Bug --summary "Login button not working"
+
+# Full options
+jr.py create PROJ --type Bug --summary "Title" --description "Details" \
+  --priority "P1 - Should have" --assignee username --labels bug urgent
+
+# Sub-task under parent
+jr.py create PROJ --type Sub-task --summary "Sub-task title" --parent PROJ-100
+
+# Description from stdin
+echo "Detailed description" | jr.py create PROJ --type Task --summary "Title" --description -
+
+# Extra fields via JSON
+jr.py create PROJ --type Story --summary "Title" --json '{"customfield_10001": {"value": "A"}}'
 ```
 
 ### Transition an issue
