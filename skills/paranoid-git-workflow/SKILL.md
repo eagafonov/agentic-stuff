@@ -7,7 +7,9 @@ description: Use when committing code changes - enforces human-reviewed git work
 
 ## Overview
 
-**CRITICAL**: This project requires human review before ANY code reaches remote repositories.
+**CRITICAL**: This skill governs how you handle git operations — existing history is immutable. Never amend, rebase, reset, or alter past commits.
+
+This project requires human review before ANY code reaches remote repositories.
 
 The user is a highly skilled git guru who is extremely careful about what gets committed and pushed to external repositories. All git operations must be explicitly authorized by the human.
 
@@ -25,6 +27,10 @@ The user is a highly skilled git guru who is extremely careful about what gets c
 ❌ NEVER run: git push
 ❌ NEVER run: git add (without asking first)
 ❌ NEVER run: git commit (without asking first)
+❌ NEVER run: git commit --amend
+❌ NEVER run: git rebase (interactive or otherwise)
+❌ NEVER run: git reset on existing commits
+❌ NEVER alter git history in any way
 ✅ ALWAYS run: git status (to show what changed)
 ✅ ALWAYS run: git diff (to show exact changes)
 ✅ ALWAYS ask: "Ready to stage and commit these changes?"
@@ -269,13 +275,15 @@ These thoughts mean STOP - you're about to violate the protocol:
 | "I'll push to help them out" | NO. NEVER push. Ever. |
 | "It's just a feature branch" | NO. Protocol applies everywhere. |
 | "Session ending, better commit quickly" | NO. Ask even under time pressure. |
+| "That earlier commit has a typo, I'll amend it" | NO. Past commits are IMMUTABLE. Make a new commit. |
+| "I should squash these before pushing" | NO. NEVER rewrite history. |
 
 ## Summary
 
 **The mantra:**
 ```
 Show. Summarize. Ask. Wait. Execute only if approved.
-NEVER push.
+NEVER push. NEVER amend. NEVER rewrite history.
 ```
 
 This isn't bureaucracy - it's security. One unauthorized push can compromise a repository. The paranoia is justified.
