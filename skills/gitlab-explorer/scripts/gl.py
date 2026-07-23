@@ -23,6 +23,7 @@ Usage:
   gl.py project <path> mr <mr_iid> approve                                      # Approve MR
   gl.py project <path> mr <mr_iid> unapprove                                    # Unapprove MR
   gl.py project <path> mr <mr_iid> update [--title TITLE] [--description DESC]  # Update MR
+  gl.py project <path> file <file_path> [--ref REF]     # Read a file's contents at a ref (default: default branch)
   gl.py project <path> commits [--author AUTHOR] [--since DATE] [--until DATE] [--ref REF] [--limit N]
   gl.py project <path> branches [--search PATTERN]
   gl.py project <path> pipelines [--ref REF] [--status STATUS] [--limit N]
@@ -374,6 +375,14 @@ def _add_note_reaction(p, mr, note_id, emoji):
             raise
 
 
+def cmd_project_file(args):
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    ref = args.ref or p.default_branch
+    f = p.files.get(file_path=args.file_path, ref=ref)
+    sys.stdout.buffer.write(f.decode())
+
+
 def cmd_project_commits(args):
     gl = get_client()
     p = gl.projects.get(args.project)
@@ -517,6 +526,10 @@ def main():
     mr_p.add_argument("--title", default=None, help="New MR title (for 'update' subcommand)")
     mr_p.add_argument("--description", default=None, help="New MR description (for 'update' subcommand)")
 
+    file_p = proj_sub.add_parser("file")
+    file_p.add_argument("file_path", help="Path to file within the repository")
+    file_p.add_argument("--ref", default=None, help="Branch, tag, or commit SHA (default: project default branch)")
+
     commits_p = proj_sub.add_parser("commits")
     commits_p.add_argument("--author", default=None)
     commits_p.add_argument("--since", default=None, help="YYYY-MM-DD")
@@ -606,6 +619,8 @@ def main():
                     cmd_project_mr_threads(args)
                 else:
                     cmd_project_mr_detail(args)
+            elif args.project_cmd == "file":
+                cmd_project_file(args)
             elif args.project_cmd == "commits":
                 cmd_project_commits(args)
             elif args.project_cmd == "branches":

@@ -38,6 +38,7 @@ Run all commands as `python3 <skill-dir>/scripts/gl.py <command>`.
 | `gl.py project <path> branches [--search PATTERN]` | List branches |
 | `gl.py project <path> pipelines [--ref REF] [--status STATUS]` | List pipelines |
 | `gl.py project <path> issues [--state STATE] [--labels L1,L2]` | List issues |
+| `gl.py project <path> file <file_path> [--ref REF]` | Read a file's contents at a ref (default: default branch) |
 | `gl.py events [--after DATE] [--before DATE]` | User activity feed |
 | `gl.py groups search <query>` | Search groups |
 | `gl.py group <id> projects [--search QUERY]` | List group projects |
@@ -114,6 +115,15 @@ gl.py project group/project-name mr 258 update --description "Updated descriptio
 ### Recent commits by author
 ```bash
 gl.py project group/project-name commits --author "Eugene Agafonov" --since 2026-04-14
+```
+
+### Read a file from a repository
+```bash
+# Read from the default branch
+gl.py project group/project-name file README.md
+
+# Read from a specific branch, tag, or commit SHA
+gl.py project group/project-name file docs/setup.md --ref develop
 ```
 
 ## Run `gl.py --help` for full usage details.
