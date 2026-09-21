@@ -26,10 +26,12 @@ Run all commands as `python3 <skill-dir>/scripts/gl.py <command>`.
 | `gl.py project <path> mr <iid> changes` | MR file diff summary |
 | `gl.py project <path> mr <iid> approvals` | MR approval status |
 | `gl.py project <path> mr <iid> threads` | MR unresolved/total thread count (JSON) |
+| `gl.py project <path> mr <iid> discussions` | List threads: discussion ID, note IDs, resolution state, file:line, bodies |
 | `gl.py project <path> mr <iid> approve` | Approve MR |
 | `gl.py project <path> mr <iid> unapprove` | Unapprove MR |
 | `gl.py project <path> mr <iid> notes [--all]` | MR comments (excludes system notes by default) |
-| `gl.py project <path> mr <iid> comment <body> [--file PATH --line N] [--reaction EMOJI]` | Post MR comment (general or diff note) |
+| `gl.py project <path> mr <iid> comment <body> [--file PATH --line N] [--reaction EMOJI]` | Post MR comment (general or new diff-note thread) |
+| `gl.py project <path> mr <iid> reply <note_id> <body> [--reaction EMOJI]` | Reply inside the existing thread containing `note_id` |
 | `gl.py project <path> mr <iid> react <note_id> --reaction EMOJI` | Add reaction (award emoji) to a note |
 | `gl.py project <path> mr <iid> resolve <note_id>` | Resolve discussion containing the given note ID |
 | `gl.py project <path> mr <iid> resolve --all` | Resolve all unresolved discussions |
@@ -84,6 +86,9 @@ gl.py project group/project-name mr 258 comment "This could be simplified" --fil
 
 # Multiline comment from stdin
 echo "## Review Summary\n\nLooks good overall." | gl.py project group/project-name mr 258 comment - --reaction robot
+
+# Reply inside an existing review thread (find note IDs with `discussions`)
+gl.py project group/project-name mr 258 reply 123456 "Addressed in abc1234: fixed the inverted query conclusion" --reaction robot
 ```
 
 > **Convention:** Always add `--reaction robot` when posting comments as an agent. This marks the comment as machine-generated so humans can easily distinguish agent comments from human ones.

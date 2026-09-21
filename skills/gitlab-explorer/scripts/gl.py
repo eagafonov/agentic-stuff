@@ -15,8 +15,10 @@ Usage:
   gl.py project <path> mr <mr_iid> changes       # MR diff summary
   gl.py project <path> mr <mr_iid> approvals     # MR approvals
   gl.py project <path> mr <mr_iid> threads       # MR unresolved/total thread count
+  gl.py project <path> mr <mr_iid> discussions   # List threads: discussion id, note ids, resolution state
   gl.py project <path> mr <mr_iid> notes [--all] # MR comments (excludes system notes by default)
-  gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N] [--reaction EMOJI]  # Post MR comment
+  gl.py project <path> mr <mr_iid> comment <body> [--file PATH --line N] [--reaction EMOJI]  # Post MR comment (new thread)
+  gl.py project <path> mr <mr_iid> reply <note_id> <body> [--reaction EMOJI]  # Reply inside the thread containing note_id
   gl.py project <path> mr <mr_iid> react <note_id> --reaction EMOJI            # Add reaction to a note
   gl.py project <path> mr <mr_iid> resolve <note_id>                          # Resolve discussion by note ID
   gl.py project <path> mr <mr_iid> resolve --all                              # Resolve all unresolved discussions
@@ -243,6 +245,66 @@ def cmd_project_mr_resolve(args):
         else:
             print(f"Note #{note_id} not found in any resolvable discussion", file=sys.stderr)
             sys.exit(1)
+
+
+def cmd_project_mr_discussions(args):
+    """List MR discussion threads with discussion IDs, note IDs, and resolution state."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+    discussions = mr.discussions.list(get_all=True)
+    for d in discussions:
+        notes = d.attributes.get("notes", [])
+        if not notes:
+            continue
+        first = notes[0]
+        resolvable = [n for n in notes if n.get("resolvable")]
+        if not resolvable:
+            state = "not-resolvable"
+        elif all(n.get("resolved") for n in resolvable):
+            state = "resolved"
+        else:
+            state = "unresolved"
+        pos = first.get("position") or {}
+        path = pos.get("new_path") or pos.get("old_path") or ""
+        line = pos.get("new_line") or pos.get("old_line") or ""
+        pos_info = f" ({path}:{line})" if path and line else (f" ({path})" if path else "")
+        print(f"--- discussion {d.id} [{state}] ({len(notes)} notes){pos_info} ---")
+        for n in notes:
+            author = n.get("author", {}).get("username", "?")
+            print(f"  #{n['id']} {author} {fmt_date(n.get('created_at'))}:")
+            print(f"    {n.get('body', '')}")
+        print()
+
+
+def cmd_project_mr_reply(args):
+    """Reply inside the discussion thread containing the given note ID."""
+    gl = get_client()
+    p = gl.projects.get(args.project)
+    mr = p.mergerequests.get(args.mr_iid)
+
+    note_id = args.body
+    body = args.body2
+    if body == "-":
+        body = sys.stdin.read()
+    try:
+        note_id = int(note_id)
+    except (ValueError, TypeError):
+        print("Error: note_id must be a numeric ID", file=sys.stderr)
+        sys.exit(1)
+    if not body:
+        print("Error: reply body is required (pass text or '-' for stdin)", file=sys.stderr)
+        sys.exit(1)
+
+    for d in mr.discussions.list(get_all=True):
+        if any(n["id"] == note_id for n in d.attributes.get("notes", [])):
+            new_note = d.notes.create({"body": body})
+            print(f"Replied note #{new_note.id} in discussion {d.id} (containing note #{note_id})")
+            if args.reaction:
+                _add_note_reaction(p, mr, new_note.id, args.reaction)
+            return
+    print(f"Note #{note_id} not found in any discussion on MR !{mr.iid}", file=sys.stderr)
+    sys.exit(1)
 
 
 def cmd_project_mr_update(args):
@@ -517,9 +579,10 @@ def main():
 
     mr_p = proj_sub.add_parser("mr")
     mr_p.add_argument("mr_iid", type=int)
-    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "react", "resolve", "update", "threads"], default=None)
+    mr_p.add_argument("mr_subcmd", nargs="?", choices=["changes", "approvals", "approve", "unapprove", "notes", "comment", "reply", "react", "resolve", "update", "threads", "discussions"], default=None)
     mr_p.add_argument("--all", action="store_true", help="Include system notes (for 'notes' subcommand)")
-    mr_p.add_argument("body", nargs="?", default=None, help="Comment body (for 'comment' subcommand, use '-' for stdin)")
+    mr_p.add_argument("body", nargs="?", default=None, help="Comment body (for 'comment'), note_id (for 'react'/'reply')")
+    mr_p.add_argument("body2", nargs="?", default=None, help="Reply body (for 'reply' subcommand, use '-' for stdin)")
     mr_p.add_argument("--file", default=None, help="File path for diff note")
     mr_p.add_argument("--line", type=int, default=None, help="Line number for diff note")
     mr_p.add_argument("--reaction", default=None, help="Emoji name to add as reaction (for 'comment' and 'react' subcommands)")
@@ -611,6 +674,10 @@ def main():
                         print("Error: note_id is required for 'react' subcommand", file=sys.stderr)
                         sys.exit(1)
                     cmd_project_mr_react(args)
+                elif args.mr_subcmd == "reply":
+                    cmd_project_mr_reply(args)
+                elif args.mr_subcmd == "discussions":
+                    cmd_project_mr_discussions(args)
                 elif args.mr_subcmd == "resolve":
                     cmd_project_mr_resolve(args)
                 elif args.mr_subcmd == "update":
