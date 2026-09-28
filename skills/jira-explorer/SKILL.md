@@ -5,12 +5,13 @@ description: Use when exploring a Jira instance - searching issues, viewing deta
 
 # Jira Explorer
 
-Explore a self-hosted Jira instance using `scripts/jr.py` (python-jira wrapper).
+Explore a Jira instance using `scripts/jr.py` (python-jira wrapper). Supports Atlassian Cloud and Data Center.
 
 ## Prerequisites
 
 - `jira` module installed (`pip install jira`)
 - Environment variables: `JIRA_URL` (or `JIRA_HOST`), `JIRA_API_TOKEN`
+- Atlassian Cloud (e.g. `*.atlassian.net`): additionally set `JIRA_EMAIL` - the token is used as Basic auth (`email:token`). Cloud is auto-detected by host or `ATATT`-prefixed token; without `JIRA_EMAIL` the script errors with instructions.
 
 ## Quick Reference
 

@@ -6,7 +6,11 @@ Authentication via environment variables:
   JIRA_URL        - Jira instance URL (e.g. https://jira.example.com)
   JIRA_HOST       - Jira hostname (e.g. jira.example.com); used as
                     https://<JIRA_HOST> when JIRA_URL is not set
-  JIRA_API_TOKEN  - Personal Access Token (Data Center 8.14+)
+  JIRA_API_TOKEN  - API token
+  JIRA_EMAIL      - Account email, required for Atlassian Cloud (Basic auth);
+                    without it, Data Center PAT auth (Bearer) is assumed
+                    Cloud is auto-detected by a *.atlassian.net host or an
+                    ATATT-prefixed token
 
 Usage:
   jr.py auth                                      # Verify authentication
@@ -53,6 +57,18 @@ def get_client():
     if not url or not token:
         print("Error: JIRA_URL (or JIRA_HOST) and JIRA_API_TOKEN must be set", file=sys.stderr)
         sys.exit(1)
+    email = os.environ.get("JIRA_EMAIL")
+    is_cloud = ".atlassian.net" in url or token.startswith("ATATT")
+    if email and is_cloud:
+        # Atlassian Cloud API token: Basic auth (email:token)
+        return JIRA(server=url, basic_auth=(email, token))
+    if is_cloud and not email:
+        print(
+            "Error: Atlassian Cloud requires Basic auth (email:api-token). "
+            "Set JIRA_EMAIL=<email> and JIRA_API_TOKEN=<cloud api token>.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     return JIRA(server=url, token_auth=token)
 
 
@@ -70,7 +86,7 @@ def cmd_auth(args):
     myself = client.myself()
     server_info = client.server_info()
     jprint({
-        "username": myself.get("name", ""),
+        "username": myself.get("accountId", "") or myself.get("name", ""),
         "displayName": myself.get("displayName", ""),
         "emailAddress": myself.get("emailAddress", ""),
         "serverUrl": _resolve_url(),
@@ -83,7 +99,7 @@ def cmd_myself(args):
     """Show current user info and assigned issues."""
     client = get_client()
     myself = client.myself()
-    username = myself.get("name", "")
+    username = myself.get("accountId", "") or myself.get("name", "")
     print(f"User: {username} ({myself.get('displayName', '')})")
     print(f"Email: {myself.get('emailAddress', '')}")
     print()
